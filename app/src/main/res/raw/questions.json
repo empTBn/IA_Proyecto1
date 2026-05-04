@@ -1,0 +1,42 @@
+[
+  {
+    "id": 1,
+    "text": "¿El cielo es azul?"
+  },
+  {
+    "id": 2,
+    "text": "Los pájaros pueden volar"
+  },
+  {
+    "id": 3,
+    "text": "¿El agua es húmeda?"
+  },
+  {
+    "id": 4,
+    "text": "¿Los peces viven en el oceano?"
+  },
+  {
+    "id": 5,
+    "text": "¿El fuego quema?"
+  },
+  {
+    "id": 6,
+    "text": "¿Pueden los humanos respirar bajo el agua?"
+  },
+  {
+    "id": 7,
+    "text": "¿La tierra es redonda?"
+  },
+  {
+    "id": 8,
+    "text": "¿Las plantas ocupan luz solar?"
+  },
+  {
+    "id": 9,
+    "text": "¿El hielo es frío?"
+  },
+  {
+    "id": 10,
+    "text": "¿Pueden los gatos ladrar?"
+  }
+]
