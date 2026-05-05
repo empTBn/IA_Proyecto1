@@ -1,4 +1,4 @@
-package com.example.proyecto_1_ia.data
+package com.example.proyecto_1_ia.utils
 
 data class Question(
     val id: Int,

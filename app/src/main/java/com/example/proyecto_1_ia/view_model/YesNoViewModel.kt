@@ -3,9 +3,9 @@ package com.example.proyecto_1_ia.view_model
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.proyecto_1_ia.data.AnsweredQuestion
-import com.example.proyecto_1_ia.data.Question
-import com.example.proyecto_1_ia.data.QuestionRepository
+import com.example.proyecto_1_ia.utils.AnsweredQuestion
+import com.example.proyecto_1_ia.utils.Question
+import com.example.proyecto_1_ia.utils.QuestionRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

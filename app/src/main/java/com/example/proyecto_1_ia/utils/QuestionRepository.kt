@@ -1,4 +1,4 @@
-package com.example.proyecto_1_ia.data
+package com.example.proyecto_1_ia.utils
 
 import android.content.Context
 import com.example.proyecto_1_ia.R

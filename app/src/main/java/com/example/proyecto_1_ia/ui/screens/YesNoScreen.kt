@@ -15,7 +15,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.proyecto_1_ia.view_model.YesNoViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.proyecto_1_ia.data.AnsweredQuestion
+import com.example.proyecto_1_ia.utils.AnsweredQuestion
 
 @Composable
 fun YesNoScreen(viewModel: YesNoViewModel = viewModel()) {

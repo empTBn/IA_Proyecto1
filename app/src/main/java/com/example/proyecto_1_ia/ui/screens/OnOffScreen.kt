@@ -132,9 +132,15 @@ fun OnOffScreen(
                     color = MaterialTheme.colorScheme.onSecondaryContainer
                 )
             }
-
-            Spacer(modifier = Modifier.height(24.dp))
+        } else {
+            Text(
+                text = "Waiting for voice command...",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
+
+        Spacer(modifier = Modifier.height(24.dp))
 
         //TODO: Quitar una vez esté integrado el ONNX (Botones de prueba)
         Text(

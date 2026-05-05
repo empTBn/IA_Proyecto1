@@ -106,7 +106,10 @@ fun MainApp(mainViewModel: MainViewModel){
                     mainViewModel = mainViewModel
                 )
             }
-            //composable(Screen.StopGo.route) { StopGoScreen() }
+            composable(Screen.StopGo.route) {
+                //Cambiamos el modelo de visualización (es opcional acá ya que tiene el valor default
+                StopGoScreen()
+            }
             //composable(Screen.Directions.route) { DirectionsScreen() }
         }
     }
