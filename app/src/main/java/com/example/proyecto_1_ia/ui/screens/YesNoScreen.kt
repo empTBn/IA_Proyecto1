@@ -1,5 +1,6 @@
 package com.example.proyecto_1_ia.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -169,6 +170,8 @@ fun ResultsScreen(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
+            //Cambiamos el color del background para que sea más notable
+            .background(MaterialTheme.colorScheme.background)
     ) {
         Text(
             text = "Results",

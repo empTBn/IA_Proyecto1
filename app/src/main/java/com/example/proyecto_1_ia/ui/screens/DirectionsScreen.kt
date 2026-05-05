@@ -17,7 +17,7 @@ enum class Direction {
 @Composable
 fun DirectionsScreen() {
     //Management of state to determine if the car is Stopping or going
-    var currentState : Direction;
+    //var currentState : Direction;
     var directionsList : Array<Int?> = arrayOf(0, 0, 0, 0)
 ;
 
@@ -41,7 +41,7 @@ fun DirectionsScreen() {
         ) {
             Text(
                 //There is no ternary condition, we use this
-                text = "Flecha en la dirección: " + currentState.ordinal,
+                text = "Flecha en la dirección: DEFAULT",
                 modifier = Modifier.padding(24.dp),
                 style = MaterialTheme.typography.headlineMedium
             )

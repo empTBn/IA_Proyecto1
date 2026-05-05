@@ -15,7 +15,8 @@ enum class Screen {
 data class AppState(
     val currentScreen: Screen = Screen.YES_NO,
     val lastDetectedCommand: String = "",
-    val isListening: Boolean = false
+    val isListening: Boolean = false,
+    val isDarkMode: Boolean = false  //Falso significa LightMode (ON), Verdadero significa DarkMode (OFF)
 )
 
 class MainViewModel : ViewModel() {
@@ -34,5 +35,10 @@ class MainViewModel : ViewModel() {
     //Función para asignar al detector para ver si se está escuchando o no
     fun setListening(isListening: Boolean){
         _appState.value = _appState.value.copy(isListening = isListening)
+    }
+
+    //Función para activar / desactivar el modo oscuro a claro
+    fun setDarkMode(isDark: Boolean){
+        _appState.value = _appState.value.copy(isDarkMode = isDark)
     }
 }

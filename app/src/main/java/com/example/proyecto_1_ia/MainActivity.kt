@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -36,8 +37,11 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            Proyecto_1_IATheme {
-                val mainViewModel: MainViewModel = viewModel()
+            val mainViewModel: MainViewModel = viewModel()
+            val appState by mainViewModel.appState.collectAsState()
+
+            //Tenemos que modificar acá si o sí el DarkTheme
+            Proyecto_1_IATheme(darkTheme = appState.isDarkMode) {
                 MainApp(mainViewModel)
             }
         }
@@ -94,9 +98,14 @@ fun MainApp(mainViewModel: MainViewModel){
             composable(Screen.YesNo.route) {
                 YesNoScreen()
             }
-            //composable(Screen.OnOff.route) {
-            //    OnOffScreen()
-            //}
+            composable(Screen.OnOff.route) {
+                //Cambiamos el modelo de visualización
+                val onOffViewModel: OnOffViewModel = viewModel()
+                OnOffScreen(
+                    viewModel = onOffViewModel,
+                    mainViewModel = mainViewModel
+                )
+            }
             //composable(Screen.StopGo.route) { StopGoScreen() }
             //composable(Screen.Directions.route) { DirectionsScreen() }
         }
