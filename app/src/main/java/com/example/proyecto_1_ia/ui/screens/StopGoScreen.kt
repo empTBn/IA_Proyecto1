@@ -19,9 +19,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.proyecto_1_ia.utils.formatTime
@@ -135,6 +134,7 @@ fun StopGoScreen(viewModel: StopGoViewModel = viewModel()) {
                     modifier = Modifier.padding(16.dp),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
                     color = if (uiState.isMoving)
                         MaterialTheme.colorScheme.onPrimaryContainer
                     else
@@ -224,7 +224,7 @@ fun AnimatedCarIndicator(isMoving: Boolean){
     //Manejamos el área física donde se ve la animación
     Card(
         modifier = Modifier
-            .size(120.dp)
+            .size(160.dp)
             .scale(scale)
             .shadow(12.dp, CircleShape),
         shape = CircleShape,
@@ -241,7 +241,7 @@ fun AnimatedCarIndicator(isMoving: Boolean){
                 else
                     Icons.Default.StopCircle,
                 contentDescription = if(isMoving) "Vehículo en movimiento" else "Vehículo detenido",
-                modifier = Modifier.size(80.dp),
+                modifier = Modifier.size(120.dp),
                 tint = iconColor
             )
         }
