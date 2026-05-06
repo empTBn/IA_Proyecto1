@@ -60,7 +60,7 @@ class YesNoViewModel (application: Application) : AndroidViewModel(application) 
 
     //TODO //=============: Función para la interferencia de ONNX =============//
     //Esta función se llamará por el ONNX una vez esté implementado la conexión con el modelo
-    fun onCommandDetected(command: String){
+    fun processCommand(command: String){
         val currentQuestion = _uiState.value.currentQuestion ?: return
 
         if (command.equals("yes", ignoreCase = true) || command.equals("no", ignoreCase = true)){
@@ -83,10 +83,15 @@ class YesNoViewModel (application: Application) : AndroidViewModel(application) 
             }
         }
     }
+    //Función para procesar el comando por voz
+    fun processVoiceCommand(command: String){
+        processCommand(command)
+    }
+
 
     //Función para simular el posible caso para checar si las pruebas funcionan
     fun simulateCommand(command: String){
-        onCommandDetected(command)
+        processCommand(command)
     }
 
     //Función para resetear la lista de preguntas (una vez se hicieron las 10 preguntas en total y se mostró las respuestas)
@@ -96,4 +101,6 @@ class YesNoViewModel (application: Application) : AndroidViewModel(application) 
         _uiState.value = YesNoUiState()
         nextQuestion()
     }
+
+
 }

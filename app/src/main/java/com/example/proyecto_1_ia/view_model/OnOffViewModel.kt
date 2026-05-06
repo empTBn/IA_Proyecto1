@@ -37,6 +37,10 @@ class OnOffViewModel : ViewModel(){
             }
         }
     }
+    //Función para procesar el comando por voz
+    fun processVoiceCommand(command: String){
+        processCommand(command)
+    }
 
     //Función utilizada para activar el modo oscuro en el MainModel
     fun syncWithMainViewModel(isDarkMode: Boolean){

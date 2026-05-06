@@ -143,46 +143,6 @@ fun StopGoScreen(viewModel: StopGoViewModel = viewModel()) {
             }
         }
 
-        Spacer(modifier = Modifier.weight(1f))
-
-        //TODO Quitar los botones de prueba de acá
-        //Test buttons
-        Text(
-            text = "Test Controls (Remove when ONNX is ready)",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Button(
-                onClick = { viewModel.simulateCommand("go") },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                ),
-                modifier = Modifier.weight(1f)
-            ) {
-                Icon(Icons.Default.PlayCircle, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("GO (Test)")
-            }
-
-            Button(
-                onClick = { viewModel.simulateCommand("stop") },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.secondary
-                ),
-                modifier = Modifier.weight(1f)
-            ) {
-                Icon(Icons.Default.StopCircle, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("STOP (Test)")
-            }
-        }
-
         Spacer(modifier = Modifier.height(16.dp))
     }
 }
@@ -194,7 +154,7 @@ fun AnimatedCarIndicator(isMoving: Boolean){
     val scale by animateFloatAsState(
         targetValue = if (isMoving) 1.1f else 1.0f,  //Aumenta la escala de la imagen por 1 decimal
         animationSpec = if (isMoving) {
-            //Si se mueve, aplicamos una animación loopeada cada 600 milisegundos
+            //Si se mueve, aplicamos una animación en loop cada 600 milisegundos
             infiniteRepeatable(
                 animation = tween(600, easing = FastOutSlowInEasing),
                 repeatMode = RepeatMode.Reverse

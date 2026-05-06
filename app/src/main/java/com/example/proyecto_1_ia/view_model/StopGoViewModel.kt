@@ -102,7 +102,9 @@ class StopGoViewModel : ViewModel(){
             }
         }
     }
-
+    fun processVoiceCommand(command: String){
+        processCommand(command)
+    }
 
     //Funciones auxiliar para determinar un caso de un posible error
     fun showTemporaryWarning(warning: String){

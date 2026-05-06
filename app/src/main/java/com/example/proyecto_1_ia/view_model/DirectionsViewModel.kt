@@ -70,6 +70,10 @@ class DirectionsViewModel : ViewModel() {
 
         }
     }
+    //Función para procesar el comando por voz
+    fun processVoiceCommand(command: String){
+        processCommand(command)
+    }
 
     //Función para el simulador como tal
     fun simulateCommand(command: String){
