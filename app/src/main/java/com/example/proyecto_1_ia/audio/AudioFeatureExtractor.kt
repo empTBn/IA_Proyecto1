@@ -1,6 +1,5 @@
 package com.example.proyecto_1_ia.audio
 
-import android.util.Log
 import kotlin.math.*
 
 class AudioFeatureExtractor {
@@ -45,7 +44,6 @@ class AudioFeatureExtractor {
             return resizeToTarget(melSpecDb)
         } catch (e: Exception){
             //A niveles de probabilidad de espectrograma, retornamos 0
-            Log.e(TAG, "Error en AudioFeatureExtractor (extrayendo características a espectrograma): ${e.message}")
             return FloatArray(TARGET_SIZE * TARGET_SIZE)
         }
     }
@@ -94,11 +92,11 @@ class AudioFeatureExtractor {
         return stft
     }
 
-    //Función encargada de filtrar los bancos de ruido en la imagen del espectograma
+    //Función encargada de filtrar los bancos de ruido en la imagen del espectrograma
     fun applyMelFilters(powerSpec: Array<FloatArray>): Array<FloatArray>{
         //De igual manera ocupamos agarrar los frames y los bins de nuestro audio
         val numFrames = powerSpec.size
-        val numFreqBins = powerSpec[0].size //Ya que es un matriz cuadrado, podemos agarrar el tamaño de cualquiera
+        val numFreqBins = powerSpec[0].size //Ya que es matriz cuadrada, podemos agarrar el tamaño de cualquiera
         val melSpec = Array(numFrames) { FloatArray(N_MELS) }
 
         //Para el filtrador, si usamos el número de frames, pero usamos nuestro valor de N_MELS para terminar dicha matriz

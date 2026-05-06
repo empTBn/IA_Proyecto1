@@ -7,7 +7,7 @@ import ai.onnxruntime.OrtSession //Librería completa de onnx
 import android.content.Context
 import android.util.Log
 import java.nio.FloatBuffer
-import java.util.EnumSet
+import java.io.File
 
 class OnnxInferenceEngine(private val context: Context){
     private var session: OrtSession? = null
@@ -36,10 +36,31 @@ class OnnxInferenceEngine(private val context: Context){
             //Acá cargamos el model y lo reservamos en un buffer de memoria
             environment = OrtEnvironment.getEnvironment()
             Log.d(TAG, "ONNX (Cargando modelo desde assets): $MODEL_FILENAME")
-            val modelBytes = context.assets.open(MODEL_FILENAME).use { inputStream ->
-                inputStream.readBytes()
+
+            //Copiamos archivos de assets al storage interno
+            val modelDir = context.filesDir
+            val modelFile = File(modelDir, MODEL_FILENAME)
+            val dataFile = File(modelDir, "$MODEL_FILENAME.data")
+
+            //Ahora sí copiamos el modelo.onnx de forma correcta
+            context.assets.open(MODEL_FILENAME).use { input ->
+                modelFile.outputStream().use { output ->
+                    input.copyTo(output)
+                }
             }
-            Log.d(TAG, "ONNX (Determinando tamaño de modelo): ${modelBytes.size / 1024}KB")
+            Log.d(TAG, "Modelo copiado: ${modelFile.absolutePath} (${modelFile.length() / 1024}KB)")
+
+            //Copiamos model.onnx.data
+            try {
+                context.assets.open("$MODEL_FILENAME.data").use { input ->
+                    dataFile.outputStream().use { output ->
+                        input.copyTo(output)
+                    }
+                }
+                Log.d(TAG, "Datos externos copiados: ${dataFile.absolutePath} (${dataFile.length() / 1024}KB)")
+            } catch (e: Exception){
+                Log.w(TAG, "Error en ONNX (No se encontró archivo de datos externos)")
+            }
 
             //Acá entonces, creamos una sesión de Ort, la optimizamos (la utilizaremos para crear nuestra sesion ONNX)
             val sessionOptions = OrtSession.SessionOptions()
@@ -47,7 +68,7 @@ class OnnxInferenceEngine(private val context: Context){
             sessionOptions.addCPU(true)  //Indicamos que use CPU en esto
 
             //Finalmente, terminamos de cargar el modelo, creando una sesión con el buffer y las opciones de ORT
-            session = environment?.createSession(modelBytes, sessionOptions)
+            session = environment?.createSession(modelFile.absolutePath, sessionOptions)
             Log.d(TAG, "ONNX (Modelo cargado exitosamente!)")
             true
         } catch (e: Exception){
@@ -159,11 +180,12 @@ class OnnxInferenceEngine(private val context: Context){
     }
 
     //Función encargada de cerrar la conexión al modelo
-    fun close(){
+    fun close() {
         try {
-
-        } catch (e: Exception){
-            Log.e(TAG, "Error en ONNX (Error cerrando sesion con ONNX): ${e.message}")
+            session?.close()
+            environment?.close()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error closing session: ${e.message}")
         }
     }
 }

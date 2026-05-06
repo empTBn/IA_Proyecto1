@@ -126,39 +126,6 @@ fun QuestionScreen(
         }
 
         Spacer(modifier = Modifier.height(32.dp))
-
-        // Test buttons (remove these when ONNX is integrated)
-        Text(
-            text = "Test Controls (Remove when ONNX is ready)",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Button(
-                onClick = onYesClick,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                ),
-                modifier = Modifier.weight(1f)
-            ) {
-                Text("YES (Test)", modifier = Modifier.padding(8.dp))
-            }
-
-            Button(
-                onClick = onNoClick,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.secondary
-                ),
-                modifier = Modifier.weight(1f)
-            ) {
-                Text("NO (Test)", modifier = Modifier.padding(8.dp))
-            }
-        }
     }
 }
 @Composable

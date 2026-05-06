@@ -171,7 +171,7 @@ fun MainApp(mainViewModel: MainViewModel){
                         val command = appState.lastDetectedCommand
                         //Validamos que el comando tenga valor, no sea el mismo de la vez pasada y esté en esta pestaña
                         if (command.isNotEmpty() && command != lastProcessedCommand
-                            && appState.currentScreen == ScreenEnum.ON_OFF){
+                            && appState.currentScreen == ScreenEnum.STOP_GO){
                             stopGoViewModel.processVoiceCommand(command)
                             lastProcessedCommand = command
                         }
@@ -185,7 +185,7 @@ fun MainApp(mainViewModel: MainViewModel){
                         val command = appState.lastDetectedCommand
                         //Validamos que el comando tenga valor, no sea el mismo de la vez pasada y esté en esta pestaña
                         if (command.isNotEmpty() && command != lastProcessedCommand
-                            && appState.currentScreen == ScreenEnum.ON_OFF){
+                            && appState.currentScreen == ScreenEnum.DIRECTIONS){
                             directionsViewModel.processVoiceCommand(command)
                             lastProcessedCommand = command
                         }
@@ -208,23 +208,32 @@ fun MainApp(mainViewModel: MainViewModel){
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     // Command feedback text
-                    if (appState.lastDetectedCommand.isNotEmpty()) {
+                    if (appState.isListening) {
                         Column {
                             Text(
-                                text = "Last: ${appState.lastDetectedCommand.uppercase()}",
+                                text = "🎤 Listening...",
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.primary
+                                color = MaterialTheme.colorScheme.error
                             )
-                            Text(
-                                text = "Confidence: ${(appState.confidence * 100).toInt()}%",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                            if (appState.lastDetectedCommand.isNotEmpty()) {
+                                Text(
+                                    text = "Detected: ${appState.lastDetectedCommand.uppercase()}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
                         }
+                    } else if (appState.lastDetectedCommand.isNotEmpty()) {
+                        Text(
+                            text = "Last: ${appState.lastDetectedCommand.uppercase()} (${(appState.confidence * 100).toInt()}%)",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
                     } else {
                         Text(
-                            text = "Say a command",
+                            text = "Tap mic to speak",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

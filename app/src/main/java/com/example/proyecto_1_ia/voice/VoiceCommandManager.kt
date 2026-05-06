@@ -13,7 +13,7 @@ class VoiceCommandManager(
 ){
     companion object {
         private const val TAG = "VoiceCommandManager"
-        private const val CONFIDENCE_THRESHOLD = 0.6f   //Solo se activa si hay 60% de confianza que se escuchó algo
+        private const val CONFIDENCE_THRESHOLD = 0.3f   //Solo se activa si hay 60% de confianza que se escuchó algo
     }
 
     private val inferenceEngine = OnnxInferenceEngine(context)
@@ -41,6 +41,8 @@ class VoiceCommandManager(
      * AUDIO ->  MEL SPECTROGRAM -> ONNX INFERENCE -> COMMAND
      */
     fun processAudio(audioData: FloatArray){
+        Log.d(TAG, "processAudio called with ${audioData.size} samples")
+
         //Validamos que el modelo haya sido cargado
         if (!isModelLoaded){
             Log.e(TAG, "Voice Command Manager error (Modelo no cargó, no puede procesarse el audio)")

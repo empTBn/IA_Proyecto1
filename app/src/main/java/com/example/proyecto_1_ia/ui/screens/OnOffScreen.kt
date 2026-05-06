@@ -141,42 +141,5 @@ fun OnOffScreen(
         }
 
         Spacer(modifier = Modifier.height(24.dp))
-
-        //TODO: Quitar una vez esté integrado el ONNX (Botones de prueba)
-        Text(
-            text = "Testear Controles (Remover cuando ONNX)",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Button(
-                onClick = { viewModel.simulateCommand("on") },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                ),
-                modifier = Modifier.weight(1f)
-            ) {
-                Icon(Icons.Default.LightMode, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("ON (Test)")
-            }
-
-            Button(
-                onClick = { viewModel.simulateCommand("off") },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.secondary
-                ),
-                modifier = Modifier.weight(1f)
-            ) {
-                Icon(Icons.Default.DarkMode, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("OFF (Test)")
-            }
-        }
     }
 }
