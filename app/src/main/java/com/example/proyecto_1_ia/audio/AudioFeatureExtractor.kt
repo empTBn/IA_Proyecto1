@@ -1,8 +1,6 @@
 package com.example.proyecto_1_ia.audio
 
-import android.media.AudioFormat
 import android.util.Log
-import java.sql.Date
 import kotlin.math.*
 
 class AudioFeatureExtractor {

@@ -16,7 +16,6 @@ class OnnxInferenceEngine(private val context: Context){
     //Creamos un objeto companion para manejar la solicitud de comandos
     companion object {
         private const val TAG = "OnnxInferenceEngine"  //Colocamos un TAG para manejar errores
-
         const val MODEL_FILENAME = "model.onnx"     //Nombre del archivo de modelos
         const val INPUT_NAME = "input"              //Para combinar con nuestro export
         const val OUTPUT_NAME = "output"            //Para combinar con nuestro export
