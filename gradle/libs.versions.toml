@@ -11,7 +11,7 @@ composeBom = "2026.02.01"
 navigationCompose = "2.8.0"   # ADD THIS
 materialIconsExtended = "1.7.6"   # ADD THIS (still works, just distributed differently)
 lifecycleViewmodelCompose = "2.8.0" #ADD THIS
-onnxruntime = "1.18.0"
+onnxruntime = "1.25.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }

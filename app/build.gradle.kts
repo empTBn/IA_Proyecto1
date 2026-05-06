@@ -69,6 +69,13 @@ dependencies {
     //Navigation
     implementation(libs.androidx.navigation.compose)
 
+    // ViewModel Compose
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+
+    // ONNX Runtime Mobile
+    implementation(libs.onnxruntime)
+
+    //Testings
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
