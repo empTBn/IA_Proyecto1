@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -182,7 +183,7 @@ fun DPadController(
     ) {
         //Colocamos el label de la dirección actual
         Text(
-            text = if (currentDirection.isNotEmpty()) currentDirection else "NONE",
+            text = if (currentDirection.isNotEmpty()) currentDirection else "WAITING DIRECTIONS",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground
@@ -194,16 +195,10 @@ fun DPadController(
         ArrowButton(
             color = upColor,
             isActive = isUpActive,
-            modifier = Modifier.size(70.dp)
-        ){
-            Icon(
-                Icons.Default.KeyboardArrowUp,
-                contentDescription = "UP",
-                modifier = Modifier.size(40.dp),
-                tint = if (isUpActive) MaterialTheme.colorScheme.onPrimary
-                else MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
+            modifier = Modifier.size(70.dp),
+            Icons.Default.KeyboardArrowUp,
+            "ArrowUp"
+        )
 
         Spacer(modifier = Modifier.height(4.dp))
 
@@ -216,16 +211,10 @@ fun DPadController(
             ArrowButton(
                 color = leftColor,
                 isActive = isLeftActive,
-                modifier = Modifier.size(70.dp)
-            ){
-                Icon(
-                    Icons.Default.KeyboardDoubleArrowLeft,
-                    contentDescription = "LEFT",
-                    modifier = Modifier.size(40.dp),
-                    tint = if (isUpActive) MaterialTheme.colorScheme.onPrimary
-                    else MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+                modifier = Modifier.size(70.dp),
+                Icons.Default.KeyboardDoubleArrowLeft,
+                "ArrowLeft"
+            )
 
             //Circulo central
             Card(
@@ -237,21 +226,14 @@ fun DPadController(
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {}
 
-
             //Flecha derecha
             ArrowButton(
                 color = rightColor,
                 isActive = isRightActive,
-                modifier = Modifier.size(70.dp)
-            ){
-                Icon(
-                    Icons.Default.KeyboardDoubleArrowRight,
-                    contentDescription = "RIGHT",
-                    modifier = Modifier.size(40.dp),
-                    tint = if (isUpActive) MaterialTheme.colorScheme.onPrimary
-                    else MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+                modifier = Modifier.size(70.dp),
+                Icons.Default.KeyboardDoubleArrowRight,
+                "ArrowRight"
+            )
         }
 
         Spacer(modifier = Modifier.height(4.dp))
@@ -260,16 +242,10 @@ fun DPadController(
         ArrowButton(
             color = downColor,
             isActive = isDownActive,
-            modifier = Modifier.size(70.dp)
-        ){
-            Icon(
-                Icons.Default.KeyboardArrowDown,
-                contentDescription = "DOWN",
-                modifier = Modifier.size(40.dp),
-                tint = if (isUpActive) MaterialTheme.colorScheme.onPrimary
-                else MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
+            modifier = Modifier.size(70.dp),
+            Icons.Default.KeyboardArrowDown,
+            "ArrowDown"
+        )
     }
 }
 
@@ -278,7 +254,8 @@ fun ArrowButton(
   color: Color,
   isActive: Boolean,
   modifier: Modifier = Modifier,
-  content: @Composable () -> Unit  //Es para poder colocar dentro un objeto composable
+  imageVector: ImageVector,
+  contentDescription: String,
 ) {
     Card(
         modifier = modifier
@@ -296,7 +273,13 @@ fun ArrowButton(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ){
-            content
+            Icon(
+                imageVector,
+                contentDescription = contentDescription,
+                modifier = Modifier.size(40.dp),
+                tint = if (isActive) MaterialTheme.colorScheme.onPrimary
+                else MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
