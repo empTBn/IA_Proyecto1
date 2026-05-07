@@ -11,6 +11,8 @@ import kotlinx.coroutines.flow.asStateFlow
 //Nuestras librerías propias
 import com.example.proyecto_1_ia.audio.AudioRecorder
 import com.example.proyecto_1_ia.voice.VoiceCommandManager
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 enum class ScreenEnum {
     YES_NO,
@@ -81,15 +83,28 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
         }
 
         _appState.value = _appState.value.copy(isListening = true)
-        audioRecorder.startContinuousRecording(viewModelScope)
-        Log.d(TAG, "Voice recognition started")
+
+        //Grabamos un clip de audio, lo procesamos y nos detenemos
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val audioData = audioRecorder.recordAudio()
+                if (audioData != null) {
+                    Log.d(TAG, "Audio captured: ${audioData.size} samples")
+                    voiceCommandManager?.processAudio(audioData)
+                }
+            } catch(e: Exception) {
+                Log.e(TAG, "Error grabando el audio: ${e.message}")
+            } finally {
+                //Aplicamos detener después de procesar
+                _appState.value = _appState.value.copy(isListening = false)
+            }
+        }
     }
 
     //Apagar reconocimiento de voz
     fun stopVoiceRecognition(){
         _appState.value = _appState.value.copy(isListening = false)
         audioRecorder.stopContinuousRecording()
-        Log.d(TAG, "Voice recognition stopped")
     }
 
     //Esto será utilizado en todas las pantallas, algo para detectar el comando y enviar señal

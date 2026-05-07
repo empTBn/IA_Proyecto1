@@ -13,7 +13,7 @@ class VoiceCommandManager(
 ){
     companion object {
         private const val TAG = "VoiceCommandManager"
-        private const val CONFIDENCE_THRESHOLD = 0.3f   //Solo se activa si hay 60% de confianza que se escuchó algo
+        private const val CONFIDENCE_THRESHOLD = 0.2f   //Solo se activa si hay 60% de confianza que se escuchó algo
     }
 
     private val inferenceEngine = OnnxInferenceEngine(context)

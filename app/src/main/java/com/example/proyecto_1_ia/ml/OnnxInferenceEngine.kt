@@ -1,6 +1,6 @@
 package com.example.proyecto_1_ia.ml
 
-
+import kotlin.math.exp
 import ai.onnxruntime.OnnxTensor
 import ai.onnxruntime.OrtEnvironment
 import ai.onnxruntime.OrtSession //Librería completa de onnx
@@ -92,7 +92,6 @@ class OnnxInferenceEngine(private val context: Context){
             //Creamos un tensor de entrada
             //Su forma debe ser (1, 1, 64, 64)  - batch_size=1, channels=1, height=64, width=64
             val inputShape = longArrayOf(1, 1, 64, 64)
-
             val floatBuffer = FloatBuffer.wrap(features)
             val inputTensor = OnnxTensor.createTensor(
                 environment!!,
@@ -113,12 +112,9 @@ class OnnxInferenceEngine(private val context: Context){
                 return null
             }
 
-            //Manejamos las probabilidades
-            // Handle different output types
-            val probabilities: FloatArray = when (val value = outputValue.value) {
+            //Extraemos la logística cruda
+            val rawLogits: FloatArray = when (val value = outputValue.value) {
                 is Array<*> -> {
-                    // Output is float[][] - extract first row
-                    Log.d(TAG, "Output is 2D array, extracting first row")
                     val firstRow = value[0]
                     when (firstRow) {
                         is FloatArray -> firstRow
@@ -126,21 +122,16 @@ class OnnxInferenceEngine(private val context: Context){
                             FloatArray(firstRow.size) { i -> (firstRow[i] as Float) }
                         }
                         else -> {
-                            Log.e(TAG, "Unexpected inner type: ${firstRow?.javaClass}")
                             FloatArray(COMMANDS.size)
                         }
                     }
                 }
-                is FloatArray -> {
-                    // Output is already float[] (1D)
-                    Log.d(TAG, "Output is 1D array")
-                    value
-                }
-                else -> {
-                    Log.e(TAG, "Unexpected output type: ${value?.javaClass}")
-                    FloatArray(COMMANDS.size)
-                }
+                is FloatArray -> value
+                else -> FloatArray(COMMANDS.size)
             }
+
+            //Aplicamos el SOFTMAX para suavizar la lógica y probabilidades
+            val probabilities = softmax(rawLogits)
 
             // Find highest probability
             var maxIndex = 0
@@ -151,9 +142,6 @@ class OnnxInferenceEngine(private val context: Context){
                     maxIndex = i
                 }
             }
-
-            //Log.d(TAG, "Predicted: ${COMMANDS[maxIndex]} with confidence: $maxProb")
-            //Log.d(TAG, "All probabilities: ${probabilities.joinToString { "%.3f".format(it) }}")
 
             //Limpiamos el tensor
             inputTensor.close()
@@ -204,6 +192,25 @@ class OnnxInferenceEngine(private val context: Context){
         } catch (e: Exception){
             Log.e(TAG, "Error en ONNX DEBUG FUNCTION (error obteniendo probabilidades): ${e.message}", e)
             null
+        }
+    }
+
+    //Función encargada de suavizar el valor de predicciones
+    private fun softmax(logits: FloatArray): FloatArray{
+        // Find max for numerical stability
+        val maxLogit = logits.maxOrNull() ?: 0f
+
+        // Compute exp(x - max) for each value
+        val expValues = FloatArray(logits.size) { i ->
+            exp((logits[i] - maxLogit).toDouble()).toFloat()
+        }
+
+        // Sum of all exp values
+        val sumExp = expValues.sum()
+
+        // Normalizamos el valor o vectores
+        return FloatArray(logits.size) { i ->
+            expValues[i] / sumExp
         }
     }
 

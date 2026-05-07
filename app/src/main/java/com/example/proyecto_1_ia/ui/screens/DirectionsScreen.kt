@@ -10,14 +10,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.KeyboardDoubleArrowLeft
+import androidx.compose.material.icons.filled.KeyboardDoubleArrowRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.composed
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -221,7 +219,7 @@ fun DPadController(
                 modifier = Modifier.size(70.dp)
             ){
                 Icon(
-                    Icons.Default.KeyboardArrowLeft,
+                    Icons.Default.KeyboardDoubleArrowLeft,
                     contentDescription = "LEFT",
                     modifier = Modifier.size(40.dp),
                     tint = if (isUpActive) MaterialTheme.colorScheme.onPrimary
@@ -247,7 +245,7 @@ fun DPadController(
                 modifier = Modifier.size(70.dp)
             ){
                 Icon(
-                    Icons.Default.KeyboardArrowRight,
+                    Icons.Default.KeyboardDoubleArrowRight,
                     contentDescription = "RIGHT",
                     modifier = Modifier.size(40.dp),
                     tint = if (isUpActive) MaterialTheme.colorScheme.onPrimary

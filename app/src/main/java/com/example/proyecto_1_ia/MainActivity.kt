@@ -78,9 +78,6 @@ fun MainApp(mainViewModel: MainViewModel){
     //Acá agarramos para solicitud de permisos de grabación
     val context = LocalContext.current
 
-    //Agarramos acceso al último proceso o comando ejecutado
-    var lastProcessedCommand by remember { mutableStateOf("")}
-
     //Solicitud de permisos
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
@@ -138,10 +135,8 @@ fun MainApp(mainViewModel: MainViewModel){
                     LaunchedEffect(appState.lastDetectedCommand) {
                         val command = appState.lastDetectedCommand
                         //Validamos que el comando tenga valor, no sea el mismo de la vez pasada y esté en esta pestaña
-                        if (command.isNotEmpty() && command != lastProcessedCommand
-                            && appState.currentScreen == ScreenEnum.YES_NO){
+                        if (command.isNotEmpty() && appState.currentScreen == ScreenEnum.YES_NO){
                             yesNoViewModel.processVoiceCommand(command)
-                            lastProcessedCommand = command
                         }
                     }
                     YesNoScreen(viewModel = yesNoViewModel)
@@ -154,10 +149,8 @@ fun MainApp(mainViewModel: MainViewModel){
                     LaunchedEffect(appState.lastDetectedCommand) {
                         val command = appState.lastDetectedCommand
                         //Validamos que el comando tenga valor, no sea el mismo de la vez pasada y esté en esta pestaña
-                        if (command.isNotEmpty() && command != lastProcessedCommand
-                            && appState.currentScreen == ScreenEnum.ON_OFF){
+                        if (command.isNotEmpty() && appState.currentScreen == ScreenEnum.ON_OFF){
                             onOffViewModel.processVoiceCommand(command)
-                            lastProcessedCommand = command
                         }
                     }
                     OnOffScreen(viewModel = onOffViewModel, mainViewModel = mainViewModel)
@@ -170,10 +163,8 @@ fun MainApp(mainViewModel: MainViewModel){
                     LaunchedEffect(appState.lastDetectedCommand) {
                         val command = appState.lastDetectedCommand
                         //Validamos que el comando tenga valor, no sea el mismo de la vez pasada y esté en esta pestaña
-                        if (command.isNotEmpty() && command != lastProcessedCommand
-                            && appState.currentScreen == ScreenEnum.STOP_GO){
+                        if (command.isNotEmpty() && appState.currentScreen == ScreenEnum.STOP_GO){
                             stopGoViewModel.processVoiceCommand(command)
-                            lastProcessedCommand = command
                         }
                     }
                     StopGoScreen(stopGoViewModel)
@@ -184,10 +175,8 @@ fun MainApp(mainViewModel: MainViewModel){
                     LaunchedEffect(appState.lastDetectedCommand) {
                         val command = appState.lastDetectedCommand
                         //Validamos que el comando tenga valor, no sea el mismo de la vez pasada y esté en esta pestaña
-                        if (command.isNotEmpty() && command != lastProcessedCommand
-                            && appState.currentScreen == ScreenEnum.DIRECTIONS){
+                        if (command.isNotEmpty() && appState.currentScreen == ScreenEnum.DIRECTIONS){
                             directionsViewModel.processVoiceCommand(command)
-                            lastProcessedCommand = command
                         }
                     }
                     DirectionsScreen(directionsViewModel)
@@ -216,21 +205,21 @@ fun MainApp(mainViewModel: MainViewModel){
                                 fontWeight = FontWeight.Medium,
                                 color = MaterialTheme.colorScheme.error
                             )
-                            if (appState.lastDetectedCommand.isNotEmpty()) {
-                                Text(
-                                    text = "Detected: ${appState.lastDetectedCommand.uppercase()}",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                            }
                         }
                     } else if (appState.lastDetectedCommand.isNotEmpty()) {
-                        Text(
-                            text = "Last: ${appState.lastDetectedCommand.uppercase()} (${(appState.confidence * 100).toInt()}%)",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                        Column {
+                            Text(
+                                text = "Detected: ${appState.lastDetectedCommand.uppercase()}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = "Confidence: ${(appState.confidence * 100).toInt()}%",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     } else {
                         Text(
                             text = "Tap mic to speak",
@@ -243,15 +232,18 @@ fun MainApp(mainViewModel: MainViewModel){
                     AudioRecordButton(
                         isListening = appState.isListening,
                         onClick = {
-                            val hasPermission = ContextCompat.checkSelfPermission(
-                                context,
-                                Manifest.permission.RECORD_AUDIO
-                            ) == PackageManager.PERMISSION_GRANTED
+                            //Prevenimos que se de click mientras se esté escuchando / procesando
+                            if (!appState.isListening){
+                                val hasPermission = ContextCompat.checkSelfPermission(
+                                    context,
+                                    Manifest.permission.RECORD_AUDIO
+                                ) == PackageManager.PERMISSION_GRANTED
 
-                            if (hasPermission) {
-                                mainViewModel.toggleVoiceRecognition()
-                            } else {
-                                permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                                if (hasPermission) {
+                                    mainViewModel.toggleVoiceRecognition()
+                                } else {
+                                    permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                                }
                             }
                         }
                     )
