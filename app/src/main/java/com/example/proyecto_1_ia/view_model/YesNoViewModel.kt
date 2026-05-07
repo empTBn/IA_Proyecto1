@@ -11,20 +11,21 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
+data class TaskItem(
+    val id: Int,
+    val text: String,
+    val isCompleted: Boolean = false
+)
+
 data class YesNoUiState(
-    val currentQuestion: Question? = null,
-    val questionNumber: Int = 0,        //Número actual de preguntas hechas
-    val totalQuestions: Int = 10,       //Valor a cambiar, pueden ser solo 5 preguntas para ser más rápido
-    val isComplete: Boolean = false,    //Determinamos si se contestaron todas las necesarias
-    val commandDetected: String = "",   //Cuando se detecta un comando se guarda (YES/NO)
-    val answeredQuestions: List<AnsweredQuestion> = emptyList(), //Lista de preguntas contestadas
-    val isListening : Boolean = false   //Para determinar si el objeto para escuchar o no está funcionando
+    val tasks: List<TaskItem> = emptyList(),    //Donde guardamos la lista de preguntas
+    val currentTaskIndex: Int = 0,              //Valor de index de la tarea
+    val commandDetected: String = ""            //Cuando se detecta un comando se guarda (YES/NO)
 )
 
 class YesNoViewModel (application: Application) : AndroidViewModel(application) {
-    private val repository = QuestionRepository(application)
-
     //Para manejar el estado mediante el sistema de flow y modificar los estados de la pantalla o el trabajo
+    private val repository = QuestionRepository(application)
     private val _uiState = MutableStateFlow(YesNoUiState())
     val uiState: StateFlow<YesNoUiState> = _uiState.asStateFlow()
 
@@ -34,52 +35,76 @@ class YesNoViewModel (application: Application) : AndroidViewModel(application) 
 
     //Iniciamos el ViewModel con este solicitando la siguiente pregunta
     init {
-        nextQuestion()
+        loadTasks()
     }
 
-    fun nextQuestion(){
-        if (_uiState.value.questionNumber >= _uiState.value.totalQuestions){
-            //Si el número de preguntas es mayor o igual al número total de preguntas esperadas, significa que ya terminó
-            //y puede mostrar el resumen
-            _uiState.value = uiState.value.copy(isComplete = true)
-            return
-        }
-
+    //Esta función se encarga de cargar todas las tareas al sistema
+    fun loadTasks(){
         //Ahora, en caso de no haber terminado, tenemos que seleccionar la siguiente pregunta, ojalá excluyendo las previas preguntas
-        val question = repository.getRandomQuestion(excludeIds = askedQuestionIds)
-        question?.let{
-            //Al agarrar una pregunta al azar, tenemos que agregarla a la lista de preguntas ya hechas y aumentar el contador
-            askedQuestionIds.add(it.id)
-            _uiState.value = _uiState.value.copy(
-                currentQuestion = it,
-                questionNumber = _uiState.value.questionNumber + 1,
-                commandDetected = ""
-            )
+        val questions = repository.getAllQuestions()
+        val tasks = questions.map { q ->
+            TaskItem(id = q.id, text = q.text, isCompleted = false)
         }
+        _uiState.value = _uiState.value.copy(tasks = tasks)
     }
 
     //TODO //=============: Función para la interferencia de ONNX =============//
     //Esta función se llamará por el ONNX una vez esté implementado la conexión con el modelo
     fun processCommand(command: String){
-        val currentQuestion = _uiState.value.currentQuestion ?: return
+        val currentState = _uiState.value
+        if (currentState.tasks.isEmpty()) return //Si la lista no cargó las tareas, tiramos un error
 
-        if (command.equals("yes", ignoreCase = true) || command.equals("no", ignoreCase = true)){
-            answeredQuestions.add(
-                AnsweredQuestion(  //Guardamos el texto de la pregunta y su respuesta
-                    question = currentQuestion.text,
-                    answer = command.uppercase()
+        when(command.uppercase()){
+            "YES" -> {
+                //Marcamos la tarea como si estuviera completa
+                val updatedTasks = currentState.tasks.toMutableList() //Sacamos las tareas para poder modificar
+                val index = currentState.currentTaskIndex
+
+                //Checamos que esté en el campo indicado de tareas
+                if (index < updatedTasks.size){
+                    //Completamos la tarea en su index exacto
+                    updatedTasks[index] = updatedTasks[index].copy(isCompleted = true)
+
+                    //Actualizamos la caja de estados con el valor modificado
+                    _uiState.value = currentState.copy(
+                        tasks = updatedTasks,
+                        commandDetected = "YES"
+                    )
+                }
+            }
+            "NO" -> {
+                //Marcamos la tarea como incompleta
+                val updatedTasks = currentState.tasks.toMutableList() //Sacamos las tareas para poder modificar
+                val index = currentState.currentTaskIndex
+
+                //Checamos que esté en el campo indicado de tareas
+                if (index < updatedTasks.size){
+                    //Completamos la tarea en su index exacto
+                    updatedTasks[index] = updatedTasks[index].copy(isCompleted = false)
+
+                    //Actualizamos la caja de estados con el valor modificado
+                    _uiState.value = currentState.copy(
+                        tasks = updatedTasks,
+                        commandDetected = "NO"
+                    )
+                }
+            }
+            //Comandos para los movimientos
+            "UP" -> {
+                //Nos movemos hacia arriba, o en un array, hacia la tarea previa
+                val newIndex = (currentState.currentTaskIndex - 1).coerceAtLeast(0)
+                _uiState.value = currentState.copy(
+                    currentTaskIndex = newIndex,
+                    commandDetected = "UP"
                 )
-            )
-
-            _uiState.value = _uiState.value.copy(
-                commandDetected = command.uppercase(),
-                answeredQuestions = answeredQuestions.toList()
-            )
-
-            //Avanzamos a la siguiente pregunta de forma automática después de 1.5 segundos
-            viewModelScope.launch {
-                kotlinx.coroutines.delay(1500)
-                nextQuestion()
+            }
+            "DOWN" -> {
+                //Nos movemos hacia abajo, o en un array, hacia la tarea siguiente
+                val newIndex = (currentState.currentTaskIndex + 1).coerceAtMost(currentState.tasks.size - 1)
+                _uiState.value = currentState.copy(
+                    currentTaskIndex = newIndex,
+                    commandDetected = "DOWN"
+                )
             }
         }
     }
@@ -93,14 +118,5 @@ class YesNoViewModel (application: Application) : AndroidViewModel(application) 
     fun simulateCommand(command: String){
         processCommand(command)
     }
-
-    //Función para resetear la lista de preguntas (una vez se hicieron las 10 preguntas en total y se mostró las respuestas)
-    fun reset(){
-        askedQuestionIds.clear()
-        answeredQuestions.clear()
-        _uiState.value = YesNoUiState()
-        nextQuestion()
-    }
-
 
 }

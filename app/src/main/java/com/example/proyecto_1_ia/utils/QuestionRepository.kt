@@ -17,7 +17,7 @@ class QuestionRepository(private val context: Context){
 
     private fun loadQuestions() {
         try{
-            val inputStream = context.resources.openRawResource(R.raw.questions)
+            val inputStream = context.resources.openRawResource(R.raw.tareas)
             val reader = BufferedReader(InputStreamReader(inputStream))
 
             //Ahora que tenemos un lector por medio de buffer, hacemos que lea el JSON

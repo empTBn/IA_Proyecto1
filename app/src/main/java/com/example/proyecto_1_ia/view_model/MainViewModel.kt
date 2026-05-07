@@ -17,8 +17,7 @@ import kotlinx.coroutines.launch
 enum class ScreenEnum {
     YES_NO,
     ON_OFF,
-    STOP_GO,
-    DIRECTIONS
+    STOP_GO
 }
 
 data class AppState(
@@ -64,6 +63,13 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
 
         //Seteamos el sistema a que el modelo fue cargado
         _appState.value = _appState.value.copy(isModelLoaded = true)
+    }
+
+    //Función para limpiar el último comando llamado
+    fun clearCommand() {
+        _appState.value = _appState.value.copy(
+            lastDetectedCommand = ""
+        )
     }
 
     //Función para apagar/encender grabación

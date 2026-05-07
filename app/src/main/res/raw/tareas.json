@@ -1,0 +1,34 @@
+[
+  {
+    "id": 1,
+    "text": "Cerrar con llave la fuerta de afuera"
+  },
+  {
+    "id": 2,
+    "text": "Apagar las luces"
+  },
+  {
+    "id": 3,
+    "text": "Cerrar la puerta del garaje"
+  },
+  {
+    "id": 4,
+    "text": "Encender las cámaras de seguridad"
+  },
+  {
+    "id": 5,
+    "text": "Cerrar todas las ventanas"
+  },
+  {
+    "id": 6,
+    "text": "Apagar el televisor"
+  },
+  {
+    "id": 7,
+    "text": "Activar el sistema de alarma"
+  },
+  {
+    "id": 8,
+    "text": "Cerrar la puerta trasera con llave"
+  }
+]

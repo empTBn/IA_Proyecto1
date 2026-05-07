@@ -17,7 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.PowerSettingsNew
-import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.PunchClock
 import androidx.compose.material.icons.filled.Directions
 import androidx.compose.material3.*
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -60,15 +60,15 @@ class MainActivity : ComponentActivity() {
 sealed class Screen(val route: String, val title: String, val icon: ImageVector){
     object YesNo: Screen("yes_no", "YES/NO", Icons.Default.Check)
     object OnOff: Screen("on_off", "ON/OFF", Icons.Default.PowerSettingsNew)
-    object StopGo: Screen("stop_go", "STOP/GO", Icons.Default.PlayArrow)
-    object Directions: Screen("direction", "DIRECTION", Icons.Default.Directions)
+    object StopGo: Screen("stop_go", "STOP/GO", Icons.Default.PunchClock)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainApp(mainViewModel: MainViewModel){
     val navController = rememberNavController()
-    val screens = listOf(Screen.YesNo, Screen.OnOff, Screen.StopGo, Screen.Directions)
+    val screens = listOf(Screen.YesNo, Screen.OnOff, Screen.StopGo)
+    val routes = screens.map { it.route }
 
     //We manage the routing here
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -78,12 +78,58 @@ fun MainApp(mainViewModel: MainViewModel){
     //Acá agarramos para solicitud de permisos de grabación
     val context = LocalContext.current
 
-    //Solicitud de permisos
+    //Agarramos al último comando para evitar proceso duplicado
+    val processedCommandId = remember { mutableLongStateOf(-1L) }
+
+    //Solicitud de permisos para acceso a grabar audio
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
-        if (isGranted) {
-            mainViewModel.startVoiceRecognition()
+        if (isGranted) mainViewModel.startVoiceRecognition()
+    }
+
+    //Función ayudante para facilitar la navegación
+    fun navigateToScreen(screen: Screen){
+        mainViewModel.setCurrentScreen(
+            when (screen) {
+                Screen.YesNo -> ScreenEnum.YES_NO
+                Screen.OnOff -> ScreenEnum.ON_OFF
+                Screen.StopGo -> ScreenEnum.STOP_GO
+            }
+        )
+
+        navController.navigate(screen.route){
+            popUpTo(navController.graph.startDestinationId) {
+                saveState = true
+            }
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
+
+    // ===== SINGLE CENTRALIZED COMMAND HANDLER =====
+    // Acá manejamos el movimiento de la Barra inferior
+    // Limpia también el comando para evitar volver a lanzarlo
+    LaunchedEffect(appState.lastDetectedCommand) {
+        val command = appState.lastDetectedCommand
+        if (command.isEmpty()) return@LaunchedEffect
+
+        val currentIndex = routes.indexOf(currentRoute)
+        if (currentIndex == -1) return@LaunchedEffect
+
+        when (command.uppercase()) {
+            "LEFT" -> {
+                val newIndex = if (currentIndex == 0) routes.lastIndex else currentIndex - 1
+                navigateToScreen(screens[newIndex])
+                // Clear command so screens don't process it
+                mainViewModel.clearCommand()
+            }
+            "RIGHT" -> {
+                val newIndex = if (currentIndex == routes.lastIndex) 0 else currentIndex + 1
+                navigateToScreen(screens[newIndex])
+                // Clear command so screens don't process it
+                mainViewModel.clearCommand()
+            }
         }
     }
 
@@ -96,22 +142,7 @@ fun MainApp(mainViewModel: MainViewModel){
                         icon = { Icon(screen.icon, contentDescription = screen.title) },
                         label = { Text(screen.title) },
                         selected = currentRoute == screen.route,
-                        onClick = {
-                            //Actualizamos cada pantalla en MainViewModel
-                            when (screen) {
-                                Screen.YesNo        -> mainViewModel.setCurrentScreen(ScreenEnum.YES_NO)
-                                Screen.OnOff        -> mainViewModel.setCurrentScreen(ScreenEnum.ON_OFF)
-                                Screen.StopGo       -> mainViewModel.setCurrentScreen(ScreenEnum.STOP_GO)
-                                Screen.Directions   -> mainViewModel.setCurrentScreen(ScreenEnum.DIRECTIONS)
-                            }
-                            navController.navigate(screen.route){
-                                popUpTo(navController.graph.startDestinationId){
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        }
+                        onClick = { navigateToScreen(screen) }
                     )
                 }
             }
@@ -130,13 +161,14 @@ fun MainApp(mainViewModel: MainViewModel){
                 //Pantalla YES/NO
                 composable(Screen.YesNo.route) {
                     val yesNoViewModel: YesNoViewModel = viewModel()
-
-                    //Escuchamos por comandos de voz
+                    // Only handle non-navigation commands
                     LaunchedEffect(appState.lastDetectedCommand) {
                         val command = appState.lastDetectedCommand
-                        //Validamos que el comando tenga valor, no sea el mismo de la vez pasada y esté en esta pestaña
-                        if (command.isNotEmpty() && appState.currentScreen == ScreenEnum.YES_NO){
+                        if (command.isNotEmpty()
+                            && command !in listOf("LEFT", "RIGHT")
+                            && appState.currentScreen == ScreenEnum.YES_NO) {
                             yesNoViewModel.processVoiceCommand(command)
+                            mainViewModel.clearCommand()
                         }
                     }
                     YesNoScreen(viewModel = yesNoViewModel)
@@ -144,42 +176,34 @@ fun MainApp(mainViewModel: MainViewModel){
 
                 //Pantalla ON/OFF
                 composable(Screen.OnOff.route) {
-                    //Cambiamos el modelo de visualización
                     val onOffViewModel: OnOffViewModel = viewModel()
+
                     LaunchedEffect(appState.lastDetectedCommand) {
                         val command = appState.lastDetectedCommand
-                        //Validamos que el comando tenga valor, no sea el mismo de la vez pasada y esté en esta pestaña
-                        if (command.isNotEmpty() && appState.currentScreen == ScreenEnum.ON_OFF){
-                            onOffViewModel.processVoiceCommand(command)
+                        if (command.isNotEmpty()
+                            && command !in listOf("LEFT", "RIGHT")
+                            && appState.currentScreen == ScreenEnum.ON_OFF) {
+                                onOffViewModel.processVoiceCommand(command)
+                                mainViewModel.clearCommand()
+                            }
                         }
-                    }
                     OnOffScreen(viewModel = onOffViewModel, mainViewModel = mainViewModel)
                 }
 
                 //Pantalla STOP/GO
                 composable(Screen.StopGo.route) {
-                    //Cambiamos el modelo de visualización (es opcional acá, ya que tiene el valor default
                     val stopGoViewModel: StopGoViewModel = viewModel()
+
                     LaunchedEffect(appState.lastDetectedCommand) {
                         val command = appState.lastDetectedCommand
-                        //Validamos que el comando tenga valor, no sea el mismo de la vez pasada y esté en esta pestaña
-                        if (command.isNotEmpty() && appState.currentScreen == ScreenEnum.STOP_GO){
+                        if (command.isNotEmpty()
+                            && command !in listOf("LEFT", "RIGHT")
+                            && appState.currentScreen == ScreenEnum.STOP_GO) {
                             stopGoViewModel.processVoiceCommand(command)
+                            mainViewModel.clearCommand()
                         }
                     }
                     StopGoScreen(stopGoViewModel)
-                }
-                //Pantalla DIRECTIONS
-                composable(Screen.Directions.route) {
-                    val directionsViewModel: DirectionsViewModel = viewModel()
-                    LaunchedEffect(appState.lastDetectedCommand) {
-                        val command = appState.lastDetectedCommand
-                        //Validamos que el comando tenga valor, no sea el mismo de la vez pasada y esté en esta pestaña
-                        if (command.isNotEmpty() && appState.currentScreen == ScreenEnum.DIRECTIONS){
-                            directionsViewModel.processVoiceCommand(command)
-                        }
-                    }
-                    DirectionsScreen(directionsViewModel)
                 }
             }
 
@@ -198,14 +222,12 @@ fun MainApp(mainViewModel: MainViewModel){
                 ) {
                     // Command feedback text
                     if (appState.isListening) {
-                        Column {
-                            Text(
-                                text = "🎤 Listening...",
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.error
-                            )
-                        }
+                        Text(
+                            text = "Listening...",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.error
+                        )
                     } else if (appState.lastDetectedCommand.isNotEmpty()) {
                         Column {
                             Text(
@@ -222,7 +244,7 @@ fun MainApp(mainViewModel: MainViewModel){
                         }
                     } else {
                         Text(
-                            text = "Tap mic to speak",
+                            text = "Tap mic to speak or say LEFT/RIGHT",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
