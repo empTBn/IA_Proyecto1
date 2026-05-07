@@ -46,7 +46,7 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
     init {
         //Inicializamos el detector de comandos por voz
         voiceCommandManager = VoiceCommandManager(application) { command, confidence ->
-            Log.d(TAG, "Comando detectado: $command (confianza: $confidence)")
+            //Log.d(TAG, "Comando detectado: $command (confianza: $confidence)")
             _appState.value = _appState.value.copy(
                 confidence = confidence
             )

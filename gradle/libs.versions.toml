@@ -12,7 +12,6 @@ navigationCompose = "2.8.0"   # ADD THIS
 materialIconsExtended = "1.7.6"   # ADD THIS (still works, just distributed differently)
 lifecycleViewmodelCompose = "2.8.0" #ADD THIS
 onnxruntime = "1.25.1"
-jtransforms = "2.4.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -34,7 +33,6 @@ androidx-navigation-compose = { group = "androidx.navigation", name = "navigatio
 androidx-compose-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended", version.ref = "materialIconsExtended" }
 androidx-lifecycle-viewmodel-compose = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-compose", version.ref = "lifecycleViewmodelCompose" }
 onnxruntime = { group = "com.microsoft.onnxruntime", name = "onnxruntime-android", version.ref = "onnxruntime" }
-jtransforms = { group = "com.github.wendykierp", name = "JTransforms", version.ref = "jtransforms" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

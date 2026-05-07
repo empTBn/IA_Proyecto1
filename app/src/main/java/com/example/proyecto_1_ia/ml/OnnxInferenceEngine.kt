@@ -112,7 +112,35 @@ class OnnxInferenceEngine(private val context: Context){
                 outputs?.close()
                 return null
             }
-            val probabilities = outputValue.value as FloatArray
+
+            //Manejamos las probabilidades
+            // Handle different output types
+            val probabilities: FloatArray = when (val value = outputValue.value) {
+                is Array<*> -> {
+                    // Output is float[][] - extract first row
+                    Log.d(TAG, "Output is 2D array, extracting first row")
+                    val firstRow = value[0]
+                    when (firstRow) {
+                        is FloatArray -> firstRow
+                        is Array<*> -> {
+                            FloatArray(firstRow.size) { i -> (firstRow[i] as Float) }
+                        }
+                        else -> {
+                            Log.e(TAG, "Unexpected inner type: ${firstRow?.javaClass}")
+                            FloatArray(COMMANDS.size)
+                        }
+                    }
+                }
+                is FloatArray -> {
+                    // Output is already float[] (1D)
+                    Log.d(TAG, "Output is 1D array")
+                    value
+                }
+                else -> {
+                    Log.e(TAG, "Unexpected output type: ${value?.javaClass}")
+                    FloatArray(COMMANDS.size)
+                }
+            }
 
             // Find highest probability
             var maxIndex = 0
@@ -124,8 +152,8 @@ class OnnxInferenceEngine(private val context: Context){
                 }
             }
 
-            Log.d(TAG, "Predicted: ${COMMANDS[maxIndex]} with confidence: $maxProb")
-            Log.d(TAG, "All probabilities: ${probabilities.joinToString { "%.3f".format(it) }}")
+            //Log.d(TAG, "Predicted: ${COMMANDS[maxIndex]} with confidence: $maxProb")
+            //Log.d(TAG, "All probabilities: ${probabilities.joinToString { "%.3f".format(it) }}")
 
             //Limpiamos el tensor
             inputTensor.close()
