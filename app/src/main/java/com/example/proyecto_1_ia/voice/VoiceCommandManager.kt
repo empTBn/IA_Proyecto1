@@ -43,6 +43,8 @@ class VoiceCommandManager(
     fun processAudio(audioData: FloatArray){
         Log.d(TAG, "processAudio called with ${audioData.size} samples")
 
+
+
         //Validamos que el modelo haya sido cargado
         if (!isModelLoaded){
             Log.e(TAG, "Voice Command Manager error (Modelo no cargó, no puede procesarse el audio)")

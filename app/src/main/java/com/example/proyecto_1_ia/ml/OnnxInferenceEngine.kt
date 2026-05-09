@@ -9,7 +9,7 @@ import android.util.Log
 import java.nio.FloatBuffer
 import java.io.File
 
-class OnnxInferenceEngine(private val context: Context){
+class OnnxInferenceEngine(private val context: Context) {
     private var session: OrtSession? = null
     private var environment: OrtEnvironment? = null
 
@@ -31,7 +31,7 @@ class OnnxInferenceEngine(private val context: Context){
     }
 
     //Función encargada de cargar el Modelo ONNX
-    fun loadModel(): Boolean{
+    fun loadModel(): Boolean {
         return try {
             //Acá cargamos el model y lo reservamos en un buffer de memoria
             environment = OrtEnvironment.getEnvironment()
@@ -53,12 +53,10 @@ class OnnxInferenceEngine(private val context: Context){
             //Copiamos model.onnx.data
             try {
                 context.assets.open("$MODEL_FILENAME.data").use { input ->
-                    dataFile.outputStream().use { output ->
-                        input.copyTo(output)
-                    }
+                    dataFile.outputStream().use { output -> input.copyTo(output) }
                 }
                 Log.d(TAG, "Datos externos copiados: ${dataFile.absolutePath} (${dataFile.length() / 1024}KB)")
-            } catch (e: Exception){
+            } catch (e: Exception) {
                 Log.w(TAG, "Error en ONNX (No se encontró archivo de datos externos)")
             }
 
@@ -71,9 +69,62 @@ class OnnxInferenceEngine(private val context: Context){
             session = environment?.createSession(modelFile.absolutePath, sessionOptions)
             Log.d(TAG, "ONNX (Modelo cargado exitosamente!)")
             true
-        } catch (e: Exception){
+        } catch (e: Exception) {
             Log.e(TAG, "Error en ONNX (cargando modelo): ${e.message}", e)
             false
+        }
+    }
+
+    /*
+    * Función encargada de extraer los valores Logits del output de ONNX, manejando arrays 1D y 2D
+    */
+    private fun extractLogits(outputValue: Any): FloatArray? {
+        return try {
+            when (outputValue) {
+                is Array<*> -> {
+                    Log.d(TAG, "Output is Array<*>, size=${outputValue.size}")
+                    val firstRow = outputValue[0]
+                    when (firstRow) {
+                        is FloatArray -> {
+                            Log.d(TAG, "First row is FloatArray, size=${firstRow.size}")
+                            firstRow
+                        }
+                        is Array<*> -> {
+                            Log.d(TAG, "First row is Array<*>, size=${firstRow.size}")
+                            FloatArray(firstRow.size) { i -> (firstRow[i] as Float) }
+                        }
+                        else -> {
+                            Log.e(TAG, "Unknown inner type: ${firstRow?.javaClass}")
+                            null
+                        }
+                    }
+                }
+                is FloatArray -> {
+                    Log.d(TAG, "Output is FloatArray, size=${outputValue.size}")
+                    outputValue
+                }
+                else -> {
+                    Log.e(TAG, "Unknown output type: ${outputValue.javaClass}")
+                    try {
+                        if (outputValue is ai.onnxruntime.OnnxTensor) {
+                            val buf = outputValue.floatBuffer
+                            val arr = FloatArray(buf.remaining())
+                            buf.get(arr)
+                            Log.d(TAG, "Extracted via floatBuffer, size=${arr.size}")
+                            arr
+                        } else {
+                            Log.e(TAG, "Cannot extract from type: ${outputValue.javaClass.name}")
+                            null
+                        }
+                    } catch (e2: Exception) {
+                        Log.e(TAG, "Fallback extraction failed: ${e2.message}")
+                        null
+                    }
+                }
+            }
+        } catch (e: Exception){
+            Log.e(TAG, "Error extracting logits: ${e.message}", e)
+            null
         }
     }
 
@@ -93,11 +144,7 @@ class OnnxInferenceEngine(private val context: Context){
             //Su forma debe ser (1, 1, 64, 64)  - batch_size=1, channels=1, height=64, width=64
             val inputShape = longArrayOf(1, 1, 64, 64)
             val floatBuffer = FloatBuffer.wrap(features)
-            val inputTensor = OnnxTensor.createTensor(
-                environment!!,
-                floatBuffer,
-                inputShape
-            )
+            val inputTensor = OnnxTensor.createTensor(environment!!, floatBuffer, inputShape)
 
             //Ejecutamos la inferencia con el espectrograma
             val inputs = mapOf(INPUT_NAME to inputTensor)
@@ -105,7 +152,7 @@ class OnnxInferenceEngine(private val context: Context){
 
             //Obtenemos las probabilidades de salida
             val outputValue = outputs?.get(OUTPUT_NAME)?.get()
-            if (outputValue == null){
+            if (outputValue == null) {
                 Log.e(TAG, "Error en ONNX (Valor de salida de inferencia nulo).")
                 inputTensor.close()
                 outputs?.close()
@@ -113,35 +160,20 @@ class OnnxInferenceEngine(private val context: Context){
             }
 
             //Extraemos la logística cruda
-            val rawLogits: FloatArray = when (val value = outputValue.value) {
-                is Array<*> -> {
-                    val firstRow = value[0]
-                    when (firstRow) {
-                        is FloatArray -> firstRow
-                        is Array<*> -> {
-                            FloatArray(firstRow.size) { i -> (firstRow[i] as Float) }
-                        }
-                        else -> {
-                            FloatArray(COMMANDS.size)
-                        }
-                    }
-                }
-                is FloatArray -> value
-                else -> FloatArray(COMMANDS.size)
+            val rawLogits = extractLogits(outputValue.value)
+            if (rawLogits == null){
+                //Recibimos un valor nulo
+                inputTensor.close()
+                outputs?.close()
+                return null
             }
 
             //Aplicamos el SOFTMAX para suavizar la lógica y probabilidades
             val probabilities = softmax(rawLogits)
 
-            // Find highest probability
-            var maxIndex = 0
-            var maxProb = probabilities[0]
-            for (i in probabilities.indices) {
-                if (probabilities[i] > maxProb) {
-                    maxProb = probabilities[i]
-                    maxIndex = i
-                }
-            }
+            //Checamos por todas las probabilidades
+            val maxIndex = probabilities.indices.maxByOrNull { probabilities[it] } ?: 0
+            val maxProb = probabilities[maxIndex]
 
             //Limpiamos el tensor
             inputTensor.close()
@@ -155,43 +187,34 @@ class OnnxInferenceEngine(private val context: Context){
         }
     }
 
-    //Función para debugging con todas las probabilidades
-    fun predictWithAllProbabilities(features: FloatArray): Map<String, Float>? {
-        //De una vez validamos existencia de sesión y entorno
-        if (session == null || environment == null) return null
+    /**
+     * Testea el modelo con un input conocido para verificar que funcione de forma correcta.
+     * Permite aislar si el problema es el modelo o el procesador de audio.
+     */
+    fun testModelWithDummyData(): Boolean {
+        if (session == null || environment == null) {
+            Log.e(TAG, "Cannot test - model not loaded")
+            return false
+        }
 
         return try {
-            //Hacemos casi lo mismo que en el predict normal
-            val inputShape = longArrayOf(1, 1, 64, 64)
-            val floatBuffer = FloatBuffer.wrap(features)
-            val inputTensor = OnnxTensor.createTensor(environment!!,floatBuffer, inputShape)
-
-            val inputs = mapOf(INPUT_NAME to inputTensor)
-            val outputs = session?.run(inputs)
-
-            val outputValue = outputs?.get(OUTPUT_NAME)?.get()
-            if (outputValue == null){
-                Log.e(TAG, "Error en ONNX (Valor de salida de inferencia nulo).")
-                inputTensor.close()
-                outputs?.close()
-                return null
-            }
-            val probabilities = outputValue.value as FloatArray
-
-            //Ahora en vez de agarrar la de mayor valor, las pasamos a un Map
-            val result = mutableMapOf<String, Float>()
-            for (i in COMMANDS.indices){
-                result[COMMANDS[i]] = probabilities[i]
+            val testFeatures = FloatArray(64 * 64) { i ->
+                val row = i / 64
+                val col = i % 64
+                ((row - 32) * (col - 32)).toFloat() / 1000f
             }
 
-            //Cerramos los tensores
-            inputTensor.close()
-            outputs?.close()
+            Log.d(TAG, "=== MODEL TEST WITH DUMMY DATA ===")
+            Log.d(TAG, "Input stats: min=${testFeatures.minOrNull()}, max=${testFeatures.maxOrNull()}, mean=${testFeatures.average().toFloat()}")
 
-            result
-        } catch (e: Exception){
-            Log.e(TAG, "Error en ONNX DEBUG FUNCTION (error obteniendo probabilidades): ${e.message}", e)
-            null
+            // predict() now logs everything internally
+            predict(testFeatures)
+
+            Log.d(TAG, "=== MODEL TEST COMPLETE ===")
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "Model test failed: ${e.message}", e)
+            false
         }
     }
 
