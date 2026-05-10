@@ -2,9 +2,9 @@ package com.example.proyecto_1_ia.voice
 
 import android.content.Context
 import android.util.Log
+import kotlin.math.sin
 
 //Nuestras librerías creadas
-import com.example.proyecto_1_ia.audio.AudioFeatureExtractor
 import com.example.proyecto_1_ia.ml.OnnxInferenceEngine
 
 class VoiceCommandManager(
@@ -17,7 +17,6 @@ class VoiceCommandManager(
     }
 
     private val inferenceEngine = OnnxInferenceEngine(context)
-    private val featureExtractor = AudioFeatureExtractor()
     private var isModelLoaded = false                   //Variable para determinar si el modelo fue cargado
 
     //Función ejecutada al inicio de ser llamada la clase
@@ -36,21 +35,49 @@ class VoiceCommandManager(
         }
     }
 
+
     /**
      * FUNCIÓN ENCARGADA DE PROCESAR AUDIO HACIA EL PIPELINE COMPLETO
      * AUDIO ->  MEL SPECTROGRAM -> ONNX INFERENCE -> COMMAND
      */
     fun processAudio(audioData: FloatArray){
         Log.d(TAG, "processAudio called with ${audioData.size} samples")
-
-
-
         //Validamos que el modelo haya sido cargado
         if (!isModelLoaded){
-            Log.e(TAG, "Voice Command Manager error (Modelo no cargó, no puede procesarse el audio)")
+            Log.e(TAG, "Modelo no cargó, no puede procesarse el audio")
             return
         }
 
+        //No ocupamos truncal
+        val padded = when {
+            audioData.size < 16000 -> {
+                Log.d(TAG, "Padding from ${audioData.size} to 16000")
+                audioData + FloatArray(16000 - audioData.size)
+            }
+            audioData.size > 16000 -> {
+                Log.d(TAG, "Truncating from ${audioData.size} to 16000")
+                audioData.copyOf(16000)
+            }
+            else -> audioData
+        }
+
+        //Llamamos a la función a que se encargue de predecir por audio
+        val result = inferenceEngine.predictFromAudio(audioData)
+
+        //Checamos validez del resultado
+        if (result != null) {
+            val (command, confidence) = result
+            Log.d(TAG, "Se detectó el comando: $command (confianza: $confidence)")
+
+            //3. Esto solo lo ejecutamos en caso que el nivel de confidencia es superior al threshold
+            if (confidence >= CONFIDENCE_THRESHOLD) {
+                //Activamos la llamada al comando
+                onCommandDetected(command, confidence)
+            } else {
+                Log.d(TAG, "Nivel de similitud muy bajo: $confidence, threshold: $CONFIDENCE_THRESHOLD")
+            }
+        }
+        /*
         try {
             //1. Primero pasamos el Audio a su versión en Espectrograma
             val features = featureExtractor.audioToMelSpectogram(audioData)
@@ -75,6 +102,7 @@ class VoiceCommandManager(
         } catch (e: Exception){
             Log.e(TAG, "Voice Command Manager error (Error procesando audio: ${e.message})")
         }
+        */
     }
 
     //Función encargada de cerrar el modelo
