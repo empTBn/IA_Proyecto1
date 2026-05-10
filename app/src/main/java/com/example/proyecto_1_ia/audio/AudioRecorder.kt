@@ -9,6 +9,7 @@ import androidx.core.content.ContextCompat
 import android.content.Context
 import android.util.Log
 import kotlinx.coroutines.*
+import kotlin.math.abs
 
 class AudioRecorder(private val context: Context){
     //Acá creamos la clase para poder grabar el audio en buena calidad
@@ -17,8 +18,9 @@ class AudioRecorder(private val context: Context){
         const val SAMPLE_RATE = 16000
         const val CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_MONO
         const val AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT
-        const val BUFFER_SIZE = 16000               //1 segundo de audio
-        const val RECORDING_DURATION_MS = 1000L     //Grabamos 1 segundo por cada inferencia
+        const val RECORD_DURATION_SECONDS = 3                               // Record 3 seconds
+        const val BUFFER_SIZE = SAMPLE_RATE * RECORD_DURATION_SECONDS       //3 segundos de audio
+        const val TARGET_SIZE = SAMPLE_RATE                                 //Extraemos 1 segundo para el modelo
     }
 
     //Variables para setear el grabador de voz, booleano para indicar si se graba, etc
@@ -32,8 +34,7 @@ class AudioRecorder(private val context: Context){
     //Checamos la función para solicitar permisos de grabar audio
     fun hasPermission(): Boolean {
         return ContextCompat.checkSelfPermission(
-            context,
-            Manifest.permission.RECORD_AUDIO
+            context, Manifest.permission.RECORD_AUDIO
         ) == PackageManager.PERMISSION_GRANTED
     }
 
@@ -51,23 +52,32 @@ class AudioRecorder(private val context: Context){
 
         return withContext(Dispatchers.IO) {
             val minBufferSize = AudioRecord.getMinBufferSize(
-                SAMPLE_RATE,
-                CHANNEL_CONFIG,
-                AUDIO_FORMAT
+                SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT
             )
-
             // Use the larger of minBufferSize or our BUFFER_SIZE
             val bufferSize = maxOf(minBufferSize, BUFFER_SIZE)
 
             try {
-                // Initialize AudioRecord
                 audioRecord = AudioRecord(
-                    MediaRecorder.AudioSource.MIC,
+                    MediaRecorder.AudioSource.UNPROCESSED,
                     SAMPLE_RATE,
                     CHANNEL_CONFIG,
                     AUDIO_FORMAT,
                     bufferSize
                 )
+
+                if (audioRecord?.state != AudioRecord.STATE_INITIALIZED) {
+                    // Fallback to MIC if UNPROCESSED not available
+                    Log.w(TAG, "UNPROCESSED not available, trying MIC")
+                    audioRecord?.release()
+                    audioRecord = AudioRecord(
+                        MediaRecorder.AudioSource.MIC,
+                        SAMPLE_RATE,
+                        CHANNEL_CONFIG,
+                        AUDIO_FORMAT,
+                        bufferSize
+                    )
+                }
 
                 if (audioRecord?.state != AudioRecord.STATE_INITIALIZED) {
                     Log.e(TAG, "AudioRecord failed to initialize")
@@ -76,10 +86,14 @@ class AudioRecorder(private val context: Context){
                     return@withContext null
                 }
 
+                //Agarramos el sample rate ACTUAL que el dispositivo usa
+                val actualSampleRate = audioRecord?.sampleRate ?: SAMPLE_RATE
+                Log.d(TAG, "Recording ${RECORD_DURATION_SECONDS}s @ $actualSampleRate Hz")
+
                 // Start recording
                 audioRecord?.startRecording()
                 isRecording = true
-                Log.d(TAG, "Recording started")
+                Log.d(TAG, "Recording started @ $actualSampleRate Hz")
 
                 // Buffer to hold audio data
                 val audioBuffer = ShortArray(BUFFER_SIZE)
@@ -88,18 +102,14 @@ class AudioRecorder(private val context: Context){
                 // Read audio data
                 while (totalSamplesRead < BUFFER_SIZE && isRecording) {
                     val samplesRead = audioRecord?.read(
-                        audioBuffer,
-                        totalSamplesRead,
-                        BUFFER_SIZE - totalSamplesRead
+                        audioBuffer, totalSamplesRead, BUFFER_SIZE - totalSamplesRead
                     ) ?: 0
 
                     if (samplesRead > 0) {
                         totalSamplesRead += samplesRead
-                    } else if (samplesRead == AudioRecord.ERROR_INVALID_OPERATION) {
-                        Log.e(TAG, "AudioRecord: ERROR_INVALID_OPERATION")
-                        break
-                    } else if (samplesRead == AudioRecord.ERROR_BAD_VALUE) {
-                        Log.e(TAG, "AudioRecord: ERROR_BAD_VALUE")
+                    } else if (samplesRead == AudioRecord.ERROR_INVALID_OPERATION ||
+                        samplesRead == AudioRecord.ERROR_BAD_VALUE) {
+                        Log.e(TAG, "AudioRecord error: $samplesRead")
                         break
                     }
                 }
@@ -112,18 +122,39 @@ class AudioRecorder(private val context: Context){
 
                 Log.d(TAG, "Recording stopped. Samples read: $totalSamplesRead")
 
-                if (totalSamplesRead > 0) {
+                if (totalSamplesRead >= TARGET_SIZE) {
                     // Convert ShortArray to normalized FloatArray (-1.0 to 1.0)
                     val floatData = FloatArray(totalSamplesRead) { i ->
                         audioBuffer[i].toFloat() / Short.MAX_VALUE.toFloat()
                     }
 
-                    // Notify listener
-                    onAudioCaptured?.invoke(floatData)
+                    //Encontramos el mejor segmento de sonido de lo grabado
+                    val bestSegment = extractLoudestSegment(floatData, totalSamplesRead)
+                    Log.d(TAG, "Best segment: ${bestSegment.size} samples, max=${bestSegment.maxOf { abs(it) }}")
 
-                    floatData
+                    //Aplicamos un resample en caso el actual rate difiera a 16000
+                    val finalData = if (actualSampleRate != SAMPLE_RATE) {
+                        Log.d(TAG, "Resampling from $actualSampleRate to $SAMPLE_RATE")
+                        resample(bestSegment, actualSampleRate, SAMPLE_RATE)
+                    } else {
+                        bestSegment
+                    }
+
+                    //Aplicamos un truncal o pad para hacer que el nivel del rate sea equivalente a SAMPLE_RATE
+                    val padded = when {
+                        finalData.size < TARGET_SIZE ->
+                            finalData + FloatArray(TARGET_SIZE - finalData.size)
+                        finalData.size > TARGET_SIZE ->
+                            finalData.copyOf(TARGET_SIZE)
+                        else -> finalData
+                    }
+
+                    // Notify listener
+                    Log.d(TAG, "Output: ${padded.size} samples, max=${padded.maxOf { abs(it) }}")
+                    onAudioCaptured?.invoke(padded)
+                    padded
                 } else {
-                    Log.e(TAG, "No audio data captured")
+                    Log.e(TAG, "Not enough audio: $totalSamplesRead < $TARGET_SIZE")
                     null
                 }
             } catch (e: SecurityException) {
@@ -140,12 +171,57 @@ class AudioRecorder(private val context: Context){
                     }
                     audioRecord?.release()
                 } catch (e: Exception) {
-                    Log.e(TAG, "Error releasing AudioRecord: ${e.message}")
+                    Log.e(TAG, "Error releasing: ${e.message}")
                 }
                 audioRecord = null
                 isRecording = false
             }
         }
+    }
+
+    //Función para extraer el segundo con más sonido o mayor energía
+    private fun extractLoudestSegment(samples: FloatArray, totalSamples: Int): FloatArray {
+        val windowSize = TARGET_SIZE
+        val stepSize = SAMPLE_RATE / 4  // 0.25 second steps
+
+        var bestStart = 0
+        var bestEnergy = 0f
+
+        var start = 0
+        while (start + windowSize <= totalSamples) {
+            var energy = 0f
+            for (i in start until start + windowSize) {
+                energy += samples[i] * samples[i]
+            }
+
+            if (energy > bestEnergy) {
+                bestEnergy = energy
+                bestStart = start
+            }
+
+            start += stepSize
+        }
+
+        Log.d(TAG, "Loudest window: start=$bestStart, energy=${"%.2f".format(bestEnergy)}")
+        Log.d(TAG, "Segment max: ${samples.copyOfRange(bestStart, bestStart + windowSize).maxOf { abs(it) }}")
+
+        return samples.copyOfRange(bestStart, bestStart + windowSize)
+    }
+
+    //Función para aplicar el resample
+    private fun resample(samples: FloatArray, fromRate: Int, toRate: Int): FloatArray {
+        if (fromRate == toRate) return samples
+        val ratio = toRate.toFloat() / fromRate
+        val newLength = (samples.size * ratio).toInt()
+        val resampled = FloatArray(newLength)
+        for (i in 0 until newLength) {
+            val srcIndex = i / ratio
+            val srcFloor = srcIndex.toInt()
+            val srcCeil = minOf(srcFloor + 1, samples.size - 1)
+            val frac = srcIndex - srcFloor
+            resampled[i] = samples[srcFloor] * (1 - frac) + samples[srcCeil] * frac
+        }
+        return resampled
     }
 
     //Iniciar grabación continua
@@ -196,6 +272,3 @@ class AudioRecorder(private val context: Context){
         onAudioCaptured = null
     }
 }
-
-
-

@@ -92,7 +92,11 @@ class YesNoViewModel (application: Application) : AndroidViewModel(application) 
             //Comandos para los movimientos
             "UP" -> {
                 //Nos movemos hacia arriba, o en un array, hacia la tarea previa
-                val newIndex = (currentState.currentTaskIndex - 1).coerceAtLeast(0)
+                val newIndex = if (currentState.currentTaskIndex == 0) {
+                    currentState.tasks.size - 1
+                } else {
+                    currentState.currentTaskIndex - 1
+                }
                 _uiState.value = currentState.copy(
                     currentTaskIndex = newIndex,
                     commandDetected = "UP"
@@ -100,7 +104,11 @@ class YesNoViewModel (application: Application) : AndroidViewModel(application) 
             }
             "DOWN" -> {
                 //Nos movemos hacia abajo, o en un array, hacia la tarea siguiente
-                val newIndex = (currentState.currentTaskIndex + 1).coerceAtMost(currentState.tasks.size - 1)
+                val newIndex = if (currentState.currentTaskIndex == currentState.tasks.size - 1) {
+                    0
+                } else {
+                    currentState.currentTaskIndex + 1
+                }
                 _uiState.value = currentState.copy(
                     currentTaskIndex = newIndex,
                     commandDetected = "DOWN"
