@@ -18,8 +18,8 @@ class AudioRecorder(private val context: Context){
         const val SAMPLE_RATE = 16000
         const val CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_MONO
         const val AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT
-        const val RECORD_DURATION_SECONDS = 3                               // Record 3 seconds
-        const val BUFFER_SIZE = SAMPLE_RATE * RECORD_DURATION_SECONDS       //3 segundos de audio
+        const val RECORD_DURATION_SECONDS = 2                               // Record 2 seconds
+        const val BUFFER_SIZE = SAMPLE_RATE * RECORD_DURATION_SECONDS       //2 segundos de audio
         const val TARGET_SIZE = SAMPLE_RATE                                 //Extraemos 1 segundo para el modelo
     }
 

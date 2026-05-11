@@ -122,13 +122,11 @@ fun MainApp(mainViewModel: MainViewModel){
                 val newIndex = if (currentIndex == 0) routes.lastIndex else currentIndex - 1
                 navigateToScreen(screens[newIndex])
                 // Clear command so screens don't process it
-                mainViewModel.clearCommand()
             }
             "RIGHT" -> {
                 val newIndex = if (currentIndex == routes.lastIndex) 0 else currentIndex + 1
                 navigateToScreen(screens[newIndex])
                 // Clear command so screens don't process it
-                mainViewModel.clearCommand()
             }
         }
     }
@@ -168,7 +166,6 @@ fun MainApp(mainViewModel: MainViewModel){
                             && command !in listOf("LEFT", "RIGHT")
                             && appState.currentScreen == ScreenEnum.YES_NO) {
                             yesNoViewModel.processVoiceCommand(command)
-                            mainViewModel.clearCommand()
                         }
                     }
                     YesNoScreen(viewModel = yesNoViewModel)
@@ -184,7 +181,6 @@ fun MainApp(mainViewModel: MainViewModel){
                             && command !in listOf("LEFT", "RIGHT")
                             && appState.currentScreen == ScreenEnum.ON_OFF) {
                                 onOffViewModel.processVoiceCommand(command)
-                                mainViewModel.clearCommand()
                             }
                         }
                     OnOffScreen(viewModel = onOffViewModel, mainViewModel = mainViewModel)
@@ -200,7 +196,6 @@ fun MainApp(mainViewModel: MainViewModel){
                             && command !in listOf("LEFT", "RIGHT")
                             && appState.currentScreen == ScreenEnum.STOP_GO) {
                             stopGoViewModel.processVoiceCommand(command)
-                            mainViewModel.clearCommand()
                         }
                     }
                     StopGoScreen(stopGoViewModel)

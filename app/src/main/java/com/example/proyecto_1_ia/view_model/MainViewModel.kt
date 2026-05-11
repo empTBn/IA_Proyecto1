@@ -88,6 +88,13 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
             return
         }
 
+        // Limpiamos el previo comando al iniciar nueva grabación
+        _appState.value = _appState.value.copy(
+            isListening = true,
+            lastDetectedCommand = "",
+            confidence = 0f
+        )
+
         _appState.value = _appState.value.copy(isListening = true)
 
         //Grabamos un clip de audio, lo procesamos y nos detenemos
